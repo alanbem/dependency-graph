@@ -1,7 +1,7 @@
 # Dependency Graph
 
 [![Build Status](https://travis-ci.org/alanbem/dependency-graph.svg?branch=master)](https://travis-ci.org/alanbem/dependency-graph)
-[![Coverage Status](https://coveralls.io/repos/alanbem/dependency-graph/badge.png)](https://coveralls.io/r/alanbem/dependency-graph)
+[![Coverage Status](https://coveralls.io/repos/alanbem/dependency-graph/badge.png?branch=master)](https://coveralls.io/r/alanbem/dependency-graph?branch=master)
 
 This library is a fork of https://github.com/MikeRoetgers/dependency-graph with the following changes:
 
@@ -43,13 +43,17 @@ This definition results in the following graph:
 Ask the graph which dependencies can be resolved. When service has been executed, mark it as resolved and ask for new available services.
 
 ```php
-$services = $graph->getUnresolvedDependencies(); // 1
+$services = $graph->getUnresolvedDependencies(); // $service1
+  $service1->doSomething();
 $graph->markAsResolved($service1);
-$services = $graph->getUnresolvedDependencies(); // 2 and 3
+$services = $graph->getUnresolvedDependencies(); // $service2 and $service3
+  $service3->doSomething();
 $graph->markAsResolved($service3);
-$services = $graph->getUnresolvedDependencies(); // 2
+$services = $graph->getUnresolvedDependencies(); // $service2
+  $service2->doSomething();
 $graph->markAsResolved($service2);
-$services = $graph->getUnresolvedDependencies(); // 4
+$services = $graph->getUnresolvedDependencies(); // $service4
+  $service4->doSomething();
 ```
 
 More complex graphs are possible.
