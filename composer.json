@@ -1,14 +1,18 @@
 {
-    "name": "mike-roetgers/dependency-graph",
+    "name": "quietfrog/dependency-graph",
     "type": "library",
     "description": "Dependency graph for PHP",
     "keywords": [],
-    "homepage": "https://github.com/MikeRoetgers/dependency-graph",
+    "homepage": "https://github.com/alanbem/dependency-graph",
     "license": "MIT",
     "authors": [
         {
             "name": "Mike Roetgers",
             "email": "mike@roetgers.org"
+        },
+        {
+            "name": "Alan Gabriel Bem",
+            "email": "alan.bem@gmail.com"
         }
     ],
     "require": {
@@ -18,6 +22,6 @@
         "phpunit/phpunit": "4.1.*"
     },
     "autoload": {
-        "psr-0": { "MikeRoetgers\\DependencyGraph": "src" }
+        "psr-0": { "QuietFrog\\DependencyGraph": "src" }
     }
 }

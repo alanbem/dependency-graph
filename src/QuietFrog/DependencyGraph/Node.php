@@ -1,13 +1,13 @@
 <?php
 
-namespace MikeRoetgers\DependencyGraph;
+namespace QuietFrog\DependencyGraph;
 
 class Node
 {
     /**
-     * @var Operation
+     * @var Reference
      */
-    private $operation;
+    private $reference;
 
     /**
      * @var array
@@ -25,11 +25,11 @@ class Node
     private $started = false;
 
     /**
-     * @param Operation $operation
+     * @param Reference $reference
      */
-    public function __construct(Operation $operation)
+    public function __construct(Reference $reference)
     {
-        $this->operation = $operation;
+        $this->reference = $reference;
     }
 
     public function addDependency()
@@ -64,20 +64,15 @@ class Node
 
     public function getId()
     {
-        return $this->operation->getId();
-    }
-
-    public function hasTag($tag)
-    {
-        return $this->operation->hasTag($tag);
+        return $this->reference->getId();
     }
 
     /**
-     * @return Operation
+     * @return Reference
      */
-    public function getOperation()
+    public function getReference()
     {
-        return $this->operation;
+        return $this->reference;
     }
 
     public function setStarted($started = true)
