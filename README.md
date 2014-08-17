@@ -22,7 +22,7 @@ $service2 = new YourService2();
 $service3 = new YourService3();
 $service4 = new YourService4();
 
-$graph = new DependencyManager();
+$graph = new Graph();
 $graph->add($service1)->add($service2)->add($service3)->add($service4);
 
 $graph->addDependency($service1, $service2);
@@ -73,7 +73,7 @@ $service1 = new YourService2();
 $service2 = new YourService2();
 $service3 = new YourService3();
 
-$graph = new DependencyManager();
+$graph = new Graph();
 $graph->add($service1)->add($service2)->add($service3);
 
 $graph->addDependency($service1, $service2);
