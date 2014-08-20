@@ -24,7 +24,7 @@ class ObjectGraph
     /**
      * @var bool
      */
-    private $graphInitialized = false;
+    private $locked = false;
 
     /**
      * @param object $object
@@ -33,7 +33,7 @@ class ObjectGraph
      */
     public function add($object)
     {
-        if ($this->graphInitialized) {
+        if ($this->locked) {
             throw new GraphNotWritableException($this);
         }
 
@@ -60,7 +60,7 @@ class ObjectGraph
      */
     public function addDependency($object, $dependant)
     {
-        if ($this->graphInitialized) {
+        if ($this->locked) {
             throw new GraphNotWritableException($this);
         }
 
@@ -177,10 +177,10 @@ class ObjectGraph
 
     private function initialize()
     {
-        if ($this->graphInitialized) {
+        if ($this->locked) {
             return;
         }
-        $this->graphInitialized = true;
+        $this->locked = true;
 
         $ops = $this->getUnresolvedDependencies();
         if (empty($ops)) {
@@ -210,5 +210,61 @@ class ObjectGraph
         }
 
         return $seenLists;
+    }
+
+    /**
+     * @param callable $callback
+     * @return void
+     */
+    public function configure($callback)
+    {
+        if ($this->locked) {
+            throw new GraphNotWritableException($this);
+        }
+
+        if (false === is_callable($callback)) {
+            $message = '$callback is not callable.';
+            throw new \Exception($message);
+        }
+
+        $parents = $this->objects;
+        $dependants = $this->objects;
+
+        foreach ($parents as $parentId => $parent) {
+            foreach ($dependants as $dependantId => $dependant) {
+                if ($parent === $dependant) {
+                    continue;
+                }
+
+                if (true === $callback($this->objects[$parentId], $this->objects[$dependantId])) {
+                    $this->addDependency($parent, $dependant);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param callable $callback
+     * @return object[]
+     */
+    public function resolve($callback)
+    {
+        if (false === is_callable($callback)) {
+            $message = '$callback is not callable.';
+            throw new \Exception($message);
+        }
+
+        $this->initialize();
+
+        foreach ($this->nodes as $node) {
+            $parent = $this->objects[$node->getReference()->getId()];
+            $dependants = array_intersect_key($this->objects, array_flip($node->getDependents()));
+
+            foreach ($dependants as $dependant) {
+                $callback($parent, $dependant);
+            }
+        }
+
+        return $this->getUnresolvedDependencies();
     }
 }

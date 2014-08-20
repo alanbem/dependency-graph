@@ -4,12 +4,52 @@ namespace QuietFrog\DependencyGraph;
 
 class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 {
-    public function testSimpleDependencyGraph()
+    public function testDependencyGraphWithNoDefinedDependencies()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
-        $object4 = new Object(4);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+        $graph->add($object2);
+        $graph->add($object3);
+        $graph->add($object4);
+
+        // 1.   1 2 3 4
+        //      | | | |
+        // 2.  [resolved]
+
+        // 1.
+        $this->assertTrue($graph->hasUnresolvedDependencies());
+        $this->assertFalse($graph->isResolved());
+        $ops = $graph->getUnresolvedDependencies();
+        $this->assertCount(4, $ops);
+        $this->assertContains($object1, $ops);
+        $this->assertContains($object2, $ops);
+        $this->assertContains($object3, $ops);
+        $this->assertContains($object4, $ops);
+
+        $graph->markAsResolved($object1);
+        $graph->markAsResolved($object2);
+        $graph->markAsResolved($object3);
+        $graph->markAsResolved($object4);
+
+        // 2.
+        $this->assertFalse($graph->hasUnresolvedDependencies());
+        $this->assertTrue($graph->isResolved());
+        $ops = $graph->getUnresolvedDependencies();
+        $this->assertCount(0, $ops);
+    }
+
+    public function testDependencyGraph()
+    {
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
 
         $graph = new ObjectGraph();
 
@@ -75,16 +115,16 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(0, $ops);
     }
 
-    public function testDependencyGraphWithTwoEntryNodes()
+    public function testGraphWithTwoEntryNodes()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
-        $object4 = new Object(4);
-        $object5 = new Object(5);
-        $object6 = new Object(6);
-        $object7 = new Object(7);
-        $object8 = new Object(8);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
+        $object5 = new TestObject(5);
+        $object6 = new TestObject(6);
+        $object7 = new TestObject(7);
+        $object8 = new TestObject(8);
 
         $graph = new ObjectGraph();
 
@@ -160,7 +200,7 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testAddingDependencyWhenSubjectAndDependantAreSameObject()
     {
-        $object1 = new Object(1);
+        $object1 = new TestObject(1);
 
         $graph1 = new ObjectGraph();
         $graph2 = new ObjectGraph();
@@ -172,9 +212,9 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testCycleDetectionWithoutEntryPoint()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
 
         $graph = new ObjectGraph();
 
@@ -197,10 +237,10 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testCycleDetectionWithCycleWithinGraph()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
-        $object4 = new Object(4);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
 
         $graph = new ObjectGraph();
 
@@ -227,10 +267,10 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testMarkAsResolving()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
-        $object4 = new Object(4);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
 
         $graph = new ObjectGraph();
 
@@ -304,9 +344,9 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testAddingObjectAfterGraphInitialization()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
 
         $graph = new ObjectGraph();
 
@@ -324,10 +364,10 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testAddingDependenciesAfterGraphInitialization()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
-        $object3 = new Object(3);
-        $object4 = new Object(4);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
 
         $graph = new ObjectGraph();
 
@@ -350,8 +390,8 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testAddingDependencyForObjectNotWithinAGraph()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
 
         $graph = new ObjectGraph();
 
@@ -364,8 +404,8 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testAddingDependencyWithDependantNotWithinAGraph()
     {
-        $object1 = new Object(1);
-        $object2 = new Object(2);
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
 
         $graph = new ObjectGraph();
 
@@ -378,7 +418,7 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testMarkingAsResolvingAnObjectNotWithinAGraph()
     {
-        $object1 = new Object(1);
+        $object1 = new TestObject(1);
 
         $graph = new ObjectGraph();
 
@@ -389,7 +429,7 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 
     public function testMarkingAsResolvedAnObjectNotWithinAGraph()
     {
-        $object1 = new Object(1);
+        $object1 = new TestObject(1);
 
         $graph = new ObjectGraph();
 
@@ -421,7 +461,7 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
     {
         $graph = new ObjectGraph();
 
-        $object = new Object(1);
+        $object = new TestObject(1);
 
         $this->setExpectedException('QuietFrog\DependencyGraph\Exception\NotAnObjectException');
 
@@ -436,7 +476,7 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
     {
         $graph = new ObjectGraph();
 
-        $object = new Object(1);
+        $object = new TestObject(1);
 
         $this->setExpectedException('QuietFrog\DependencyGraph\Exception\NotAnObjectException');
 
@@ -500,7 +540,7 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
  *
  * @author Alan Gabriel Bem <alan.bem@gmail.com>
  */
-class Object
+class TestObject
 {
     private $id;
 
@@ -509,35 +549,3 @@ class Object
         $this->id = $id;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
