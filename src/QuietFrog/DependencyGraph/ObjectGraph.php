@@ -224,7 +224,7 @@ class ObjectGraph
 
         if (false === is_callable($callback)) {
             $message = '$callback is not callable.';
-            throw new \Exception($message);
+            throw new \InvalidArgumentException($message);
         }
 
         $parents = $this->objects;
@@ -251,7 +251,7 @@ class ObjectGraph
     {
         if (false === is_callable($callback)) {
             $message = '$callback is not callable.';
-            throw new \Exception($message);
+            throw new \InvalidArgumentException($message);
         }
 
         $this->initialize();

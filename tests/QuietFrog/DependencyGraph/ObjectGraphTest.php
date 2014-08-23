@@ -533,6 +533,316 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
             array(array()),
         );
     }
+
+    public function testResolveDependencyGraphWithNoDefinedDependencies()
+    {
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+        $graph->add($object2);
+        $graph->add($object3);
+        $graph->add($object4);
+
+        // 1.   1 2 3 4
+        //      | | | |
+        // 2.  [resolved]
+
+        $resolver = $this->getMock('stdClass', array('resolve'));
+
+        $resolver
+            ->expects($this->never())
+            ->method('resolve')
+        ;
+
+        $graph->resolve(array($resolver, 'resolve'));
+    }
+
+    public function testResolveDependencyGraph()
+    {
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+        $graph->add($object2);
+        $graph->add($object3);
+        $graph->add($object4);
+
+        // 1.      1
+        //       /  \
+        // 2.   2    3
+        //       \  /
+        // 3.     4
+        //        |
+        // 4. [resolved]
+
+        $graph->addDependency($object1, $object2);
+        $graph->addDependency($object1, $object3);
+        $graph->addDependency($object2, $object4);
+        $graph->addDependency($object3, $object4);
+
+        $resolver = $this->getMock('stdClass', array('resolve'));
+
+        $resolver
+            ->expects($this->at(0))
+            ->method('resolve')
+            ->with($object1, $object2)
+        ;
+
+        $resolver
+            ->expects($this->at(1))
+            ->method('resolve')
+            ->with($object1, $object3)
+        ;
+
+        $resolver
+            ->expects($this->at(2))
+            ->method('resolve')
+            ->with($object2, $object4)
+        ;
+
+        $resolver
+            ->expects($this->at(3))
+            ->method('resolve')
+            ->with($object3, $object4)
+        ;
+
+
+        $graph->resolve(array($resolver, 'resolve'));
+    }
+
+
+    public function testResolveDependencyGraphWithTwoEntryNodes()
+    {
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
+        $object5 = new TestObject(5);
+        $object6 = new TestObject(6);
+        $object7 = new TestObject(7);
+        $object8 = new TestObject(8);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+        $graph->add($object2);
+        $graph->add($object3);
+        $graph->add($object4);
+        $graph->add($object5);
+        $graph->add($object6);
+        $graph->add($object7);
+        $graph->add($object8);
+
+        // 1.     1     2
+        //        |    / \
+        // 2.     3   4   5
+        //         \ /    |
+        // 3.       6     7
+        //          |
+        // 4.       8
+        //          |
+        // 5.  [resolved]
+
+        $graph->addDependency($object1, $object3);
+        $graph->addDependency($object2, $object4);
+        $graph->addDependency($object2, $object5);
+        $graph->addDependency($object3, $object6);
+        $graph->addDependency($object4, $object6);
+        $graph->addDependency($object5, $object7);
+        $graph->addDependency($object6, $object8);
+
+        $resolver = $this->getMock('stdClass', array('resolve'));
+
+        $resolver
+            ->expects($this->at(0))
+            ->method('resolve')
+            ->with($object1, $object3)
+        ;
+
+        $resolver
+            ->expects($this->at(1))
+            ->method('resolve')
+            ->with($object2, $object4)
+        ;
+
+        $resolver
+            ->expects($this->at(2))
+            ->method('resolve')
+            ->with($object2, $object5)
+        ;
+
+        $resolver
+            ->expects($this->at(3))
+            ->method('resolve')
+            ->with($object3, $object6)
+        ;
+
+        $resolver
+            ->expects($this->at(4))
+            ->method('resolve')
+            ->with($object4, $object6)
+        ;
+
+        $resolver
+            ->expects($this->at(5))
+            ->method('resolve')
+            ->with($object5, $object7)
+        ;
+
+        $resolver
+            ->expects($this->at(6))
+            ->method('resolve')
+            ->with($object6, $object8)
+        ;
+
+        $graph->resolve(array($resolver, 'resolve'));
+    }
+
+    /**
+     * @dataProvider getNonCallables
+     *
+     * @param mixed $nonCallable
+     */
+    public function testResolveNonCallable($nonCallable)
+    {
+        $graph = new ObjectGraph();
+
+        $this->setExpectedException('InvalidArgumentException');
+
+        $graph->resolve($nonCallable);
+    }
+
+    public function getNonCallables()
+    {
+        return array(
+            array(null),
+            array(1),
+            array(1.0),
+            array(-100),
+            array(''),
+            array('Lorem ipsum dolor...'),
+            array(true),
+            array(false),
+            array(array(null)),
+            array(array(1)),
+            array(array(1.0)),
+            array(array(-100)),
+            array(array('')),
+            array(array('Lorem ipsum dolor...')),
+            array(array(true)),
+            array(array(false)),
+            array(array()),
+            array(new \stdClass()),
+        );
+    }
+
+    /**
+     * @dataProvider getNonCallables
+     *
+     * @param mixed $nonCallable
+     */
+    public function testConfiguringNonCallable($nonCallable)
+    {
+        $graph = new ObjectGraph();
+
+        $this->setExpectedException('InvalidArgumentException');
+
+        $graph->configure($nonCallable);
+    }
+
+    public function testConfiguringEmptyGraph()
+    {
+        $graph = new ObjectGraph();
+
+        $configurator = $this->getMock('stdClass', array('configure'));
+
+        $configurator
+            ->expects($this->never())
+            ->method('configure')
+        ;
+
+        $graph->configure(array($configurator, 'configure'));
+    }
+
+    public function testConfiguringGraphWithOneObject()
+    {
+        $object1 = new TestObject(1);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+
+        $configurator = $this->getMock('stdClass', array('configure'));
+
+        $configurator
+            ->expects($this->never())
+            ->method('configure')
+        ;
+
+        $graph->configure(array($configurator, 'configure'));
+    }
+
+    public function testConfiguringGraph()
+    {
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+        $graph->add($object2);
+        $graph->add($object3);
+
+        $configurator = $this->getMock('stdClass', array('configure'));
+
+        $configurator
+            ->expects($this->at(0))
+            ->method('configure')
+            ->with($object1, $object2)
+        ;
+
+        $configurator
+            ->expects($this->at(1))
+            ->method('configure')
+            ->with($object1, $object3)
+        ;
+
+        $configurator
+            ->expects($this->at(2))
+            ->method('configure')
+            ->with($object2, $object1)
+        ;
+
+        $configurator
+            ->expects($this->at(3))
+            ->method('configure')
+            ->with($object2, $object3)
+        ;
+
+        $configurator
+            ->expects($this->at(4))
+            ->method('configure')
+            ->with($object3, $object1)
+        ;
+
+        $configurator
+            ->expects($this->at(5))
+            ->method('configure')
+            ->with($object3, $object2)
+        ;
+
+        $graph->configure(array($configurator, 'configure'));
+    }
 }
 
 /**
