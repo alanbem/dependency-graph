@@ -75,6 +75,14 @@ class Node
         return $this->reference;
     }
 
+    /**
+     * @return Reference
+     */
+    public function getReferencedObject()
+    {
+        return $this->reference->getObject();
+    }
+
     public function setStarted($started = true)
     {
         $this->started = $started;

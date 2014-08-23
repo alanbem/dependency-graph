@@ -2,23 +2,42 @@
 
 namespace QuietFrog\DependencyGraph;
 
+use QuietFrog\DependencyGraph\Exception\NotAnObjectException;
+
 class Reference
 {
     /**
-     * @var string
+     * @var object
      */
-    protected $id;
+    private $object;
 
     /**
-     * @param string $id
+     * @param object $object
+     *
+     * @throws NotAnObjectException
      */
-    public function __construct($id)
+    public function __construct($object)
     {
-        $this->id = $id;
+        if (false === is_object($object)) {
+            throw new NotAnObjectException($object);
+        }
+
+        $this->object = $object;
     }
 
+    /**
+     * @return string
+     */
     public function getId()
     {
-        return $this->id;
+        return spl_object_hash($this->object);
+    }
+
+    /**
+     * @return object
+     */
+    public function getObject()
+    {
+        return $this->object;
     }
 }

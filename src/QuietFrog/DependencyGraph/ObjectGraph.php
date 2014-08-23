@@ -10,11 +10,6 @@ use QuietFrog\DependencyGraph\Exception\NotWithinGraphException;
 class ObjectGraph
 {
     /**
-     * @var object[]
-     */
-    private $objects = array();
-
-    /**
      * SplObjectStorage is buggy, so we stick to old plain array.
      *
      * @var Node[]
@@ -30,6 +25,7 @@ class ObjectGraph
      * @param object $object
      * @return ObjectGraph
      * @throws Exception\GraphNotWritableException
+     * @throws Exception\NotAnObjectException
      */
     public function add($object)
     {
@@ -37,15 +33,9 @@ class ObjectGraph
             throw new GraphNotWritableException($this);
         }
 
-        if (false === is_object($object)) {
-            throw new NotAnObjectException($object);
-        }
+        $object = new Reference($object);
 
-        $id = spl_object_hash($object);
-        $this->objects[$id] = $object;
-        $reference = new Reference($id);
-
-        $this->nodes[$reference->getId()] = new Node($reference);
+        $this->nodes[$object->getId()] = new Node($object);
 
         return $this;
     }
@@ -56,7 +46,9 @@ class ObjectGraph
      * @param object $object
      * @param object $dependant
      * @return ObjectGraph
+     *
      * @throws Exception\GraphNotWritableException
+     * @throws Exception\NotWithinGraphException
      */
     public function addDependency($object, $dependant)
     {
@@ -64,32 +56,23 @@ class ObjectGraph
             throw new GraphNotWritableException($this);
         }
 
-        if (false === is_object($object)) {
-            throw new NotAnObjectException($object);
-        }
+        $object = new Reference($object);
+        $dependant = new Reference($dependant);
 
-        if (false === is_object($dependant)) {
-            throw new NotAnObjectException($object);
-        }
-
-        if ($object === $dependant) {
+        if ($object->getId() === $dependant->getId()) {
             return $this;
         }
 
-        $objectId = spl_object_hash($object);
-
-        if (false === array_key_exists($objectId, $this->nodes)) {
-            throw new NotWithinGraphException($object, $this);
+        if (false === array_key_exists($object->getId(), $this->nodes)) {
+            throw new NotWithinGraphException($object->getObject(), $this);
         }
 
-        $dependantId = spl_object_hash($dependant);
-
-        if (false === array_key_exists($dependantId, $this->nodes)) {
-            throw new NotWithinGraphException($dependant, $this);
+        if (false === array_key_exists($dependant->getId(), $this->nodes)) {
+            throw new NotWithinGraphException($dependant->getObject(), $this);
         }
 
-        $this->nodes[$dependantId]->addDependency($objectId);
-        $this->nodes[$objectId]->addDependent($dependantId);
+        $this->nodes[$dependant->getId()]->addDependency($object->getId());
+        $this->nodes[$object->getId()]->addDependent($dependant->getId());
 
         return $this;
     }
@@ -108,15 +91,15 @@ class ObjectGraph
     public function getUnresolvedDependencies()
     {
         $this->initialize();
-        $list = array();
+        $objects = array();
 
         foreach ($this->nodes as $node) {
             if (!$node->hasDependenciesLeft() && !$node->isStarted()) {
-                $list[] = $node->getReference()->getId();
+                $objects[] = $node->getReference()->getObject();
             }
         }
 
-        return array_intersect_key($this->objects, array_flip($list));
+        return $objects;
     }
 
     /**
@@ -124,44 +107,40 @@ class ObjectGraph
      * But dependency is not fulfilled, so other operations depending on the operation still have to wait.
      *
      * @param object $object
+     *
+     * @throws NotWithinGraphException
      */
     public function markAsResolving($object)
     {
-        if (false === is_object($object)) {
-            throw new NotAnObjectException($object);
-        }
+        $object = new Reference($object);
 
-        $id = spl_object_hash($object);
-
-        if (false === array_key_exists($id, $this->nodes)) {
-            throw new NotWithinGraphException($object, $this);
+        if (false === array_key_exists($object->getId(), $this->nodes)) {
+            throw new NotWithinGraphException($object->getObject(), $this);
         }
 
         $this->initialize();
-        $this->nodes[$id]->setStarted();
+        $this->nodes[$object->getId()]->setStarted();
     }
 
     /**
      * @param object $object
+     *
+     * @throws NotWithinGraphException
      */
     public function markAsResolved($object)
     {
-        if (false === is_object($object)) {
-            throw new NotAnObjectException($object);
-        }
+        $object = new Reference($object);
 
-        $id = spl_object_hash($object);
-
-        if (false === array_key_exists($id, $this->nodes)) {
-            throw new NotWithinGraphException($object, $this);
+        if (false === array_key_exists($object->getId(), $this->nodes)) {
+            throw new NotWithinGraphException($object->getObject(), $this);
         }
 
         $this->initialize();
-        $node = $this->nodes[$id];
-        foreach ($node->getDependents() as $dependent) {
-            $this->nodes[$dependent]->decreaseDependencyCounter();
+        $node = $this->nodes[$object->getId()];
+        foreach ($node->getDependents() as $dependentId) {
+            $this->nodes[$dependentId]->decreaseDependencyCounter();
         }
-        unset($this->nodes[$id]);
+        unset($this->nodes[$object->getId()]);
     }
 
     /**
@@ -182,13 +161,15 @@ class ObjectGraph
         }
         $this->locked = true;
 
-        $ops = $this->getUnresolvedDependencies();
-        if (empty($ops)) {
+        $objects = $this->getUnresolvedDependencies();
+
+        if (0 === count($objects)) {
             throw new CircularDependencyDetectedException($this);
         }
-        foreach ($ops as $op) {
-            $id = spl_object_hash($op);
-            $this->checkForDependencies($this->nodes[$id], array());
+
+        foreach ($objects as $object) {
+            $object = new Reference($object);
+            $this->checkForDependencies($this->nodes[$object->getId()], array());
         }
     }
 
@@ -205,8 +186,8 @@ class ObjectGraph
 
         $seenLists = array();
 
-        foreach ($node->getDependents() as $dep) {
-            $seenLists[] = $this->checkForDependencies($this->nodes[$dep], $seen);
+        foreach ($node->getDependents() as $dependantId) {
+            $seenLists[] = $this->checkForDependencies($this->nodes[$dependantId], $seen);
         }
 
         return $seenLists;
@@ -215,6 +196,9 @@ class ObjectGraph
     /**
      * @param callable $callback
      * @return void
+     *
+     * @throws GraphNotWritableException
+     * @throws \InvalidArgumentException
      */
     public function configure($callback)
     {
@@ -227,16 +211,16 @@ class ObjectGraph
             throw new \InvalidArgumentException($message);
         }
 
-        $parents = $this->objects;
-        $dependants = $this->objects;
+        $parents = $this->nodes;
+        $dependants = $this->nodes;
 
         foreach ($parents as $parentId => $parent) {
             foreach ($dependants as $dependantId => $dependant) {
-                if ($parent === $dependant) {
+                if ($parent->getId() === $dependant->getId()) {
                     continue;
                 }
 
-                if (true === $callback($this->objects[$parentId], $this->objects[$dependantId])) {
+                if (true === $callback($this->nodes[$parentId]->getReferencedObject(), $this->nodes[$dependantId]->getReferencedObject())) {
                     $this->addDependency($parent, $dependant);
                 }
             }
@@ -246,6 +230,9 @@ class ObjectGraph
     /**
      * @param callable $callback
      * @return object[]
+     *
+     * @throws GraphNotWritableException
+     * @throws \InvalidArgumentException
      */
     public function resolve($callback)
     {
@@ -256,12 +243,11 @@ class ObjectGraph
 
         $this->initialize();
 
-        foreach ($this->nodes as $node) {
-            $parent = $this->objects[$node->getReference()->getId()];
-            $dependants = array_intersect_key($this->objects, array_flip($node->getDependents()));
+        foreach ($this->nodes as $parent) {
+            $dependants = array_intersect_key($this->nodes, array_flip($parent->getDependents()));
 
             foreach ($dependants as $dependant) {
-                $callback($parent, $dependant);
+                $callback($parent->getReferencedObject(), $dependant->getReferencedObject());
             }
         }
 
