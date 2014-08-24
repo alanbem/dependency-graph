@@ -6,7 +6,7 @@
 
 namespace QuietFrog\DependencyGraph\Exception;
 
-use QuietFrog\DependencyGraph\ObjectGraph;
+use QuietFrog\DependencyGraph\Graph;
 
 /**
  * NotWithinGraphException class
@@ -21,7 +21,7 @@ class NotWithinGraphException extends \OutOfBoundsException
     private $object;
 
     /**
-     * @var ObjectGraph
+     * @var Graph
      */
     private $graph;
 
@@ -29,9 +29,9 @@ class NotWithinGraphException extends \OutOfBoundsException
      * Constructor.
      *
      * @param string $object
-     * @param ObjectGraph $graph
+     * @param Graph $graph
      */
-    public function __construct($object, ObjectGraph $graph)
+    public function __construct($object, Graph $graph)
     {
         $this->object = $object;
         $this->graph  = $graph;
@@ -42,7 +42,7 @@ class NotWithinGraphException extends \OutOfBoundsException
     }
 
     /**
-     * @return ObjectGraph
+     * @return Graph
      */
     public function getGraph()
     {

@@ -2,7 +2,7 @@
 
 namespace QuietFrog\DependencyGraph\Exception;
 
-use QuietFrog\DependencyGraph\ObjectGraph;
+use QuietFrog\DependencyGraph\Graph;
 
 /**
  * GraphNotWritableException tests
@@ -13,7 +13,7 @@ class GraphNotWritableExceptionTest extends \PHPUnit_Framework_TestCase
 {
     public function testException()
     {
-        $graph  = new ObjectGraph();
+        $graph  = new Graph();
 
         $exception = new GraphNotWritableException($graph);
 

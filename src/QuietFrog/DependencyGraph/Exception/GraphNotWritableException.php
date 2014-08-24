@@ -2,19 +2,19 @@
 
 namespace QuietFrog\DependencyGraph\Exception;
 
-use QuietFrog\DependencyGraph\ObjectGraph;
+use QuietFrog\DependencyGraph\Graph;
 
 class GraphNotWritableException extends \RuntimeException
 {
     /**
-     * @var ObjectGraph
+     * @var Graph
      */
     private $graph;
 
     /**
-     * @param ObjectGraph $graph
+     * @param Graph $graph
      */
-    public function __construct(ObjectGraph $graph)
+    public function __construct(Graph $graph)
     {
         $this->graph = $graph;
 
@@ -24,7 +24,7 @@ class GraphNotWritableException extends \RuntimeException
     }
 
     /**
-     * @return ObjectGraph
+     * @return Graph
      */
     public function getGraph()
     {

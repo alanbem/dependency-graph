@@ -6,7 +6,7 @@
 
 namespace QuietFrog\DependencyGraph\Exception;
 
-use QuietFrog\DependencyGraph\ObjectGraph;
+use QuietFrog\DependencyGraph\Graph;
 
 /**
  * NotWithinGraphException tests
@@ -18,7 +18,7 @@ class NotWithinGraphExceptionTest extends \PHPUnit_Framework_TestCase
     public function testException()
     {
         $object = new \stdClass();
-        $graph  = new ObjectGraph();
+        $graph  = new Graph();
 
         $exception = new NotWithinGraphException($object, $graph);
 

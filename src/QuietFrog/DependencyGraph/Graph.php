@@ -6,7 +6,7 @@ use QuietFrog\DependencyGraph\Exception\CircularDependencyDetectedException;
 use QuietFrog\DependencyGraph\Exception\GraphNotWritableException;
 use QuietFrog\DependencyGraph\Exception\NotWithinGraphException;
 
-class ObjectGraph
+class Graph
 {
     /**
      * SplObjectStorage is buggy, so we stick to old plain array.
@@ -22,7 +22,7 @@ class ObjectGraph
 
     /**
      * @param object $object
-     * @return ObjectGraph
+     * @return Graph
      * @throws Exception\GraphNotWritableException
      * @throws Exception\NotAnObjectException
      */
@@ -44,7 +44,7 @@ class ObjectGraph
      *
      * @param object $object
      * @param object $dependant
-     * @return ObjectGraph
+     * @return Graph
      *
      * @throws Exception\GraphNotWritableException
      * @throws Exception\NotWithinGraphException

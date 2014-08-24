@@ -2,7 +2,7 @@
 
 namespace QuietFrog\DependencyGraph\Exception;
 
-use QuietFrog\DependencyGraph\ObjectGraph;
+use QuietFrog\DependencyGraph\Graph;
 
 /**
  * CircularDependencyDetectedException tests
@@ -13,7 +13,7 @@ class CircularDependencyDetectedExceptionTest extends \PHPUnit_Framework_TestCas
 {
     public function testException()
     {
-        $graph  = new ObjectGraph();
+        $graph  = new Graph();
 
         $exception = new CircularDependencyDetectedException($graph);
 
