@@ -4,7 +4,6 @@ namespace QuietFrog\DependencyGraph;
 
 use QuietFrog\DependencyGraph\Exception\CircularDependencyDetectedException;
 use QuietFrog\DependencyGraph\Exception\GraphNotWritableException;
-use QuietFrog\DependencyGraph\Exception\NotAnObjectException;
 use QuietFrog\DependencyGraph\Exception\NotWithinGraphException;
 
 class ObjectGraph
@@ -161,6 +160,10 @@ class ObjectGraph
         }
         $this->locked = true;
 
+        if (0 === count($this->nodes)) {
+            return; // graph is empty
+        }
+
         $objects = $this->getUnresolvedDependencies();
 
         if (0 === count($objects)) {
@@ -214,14 +217,16 @@ class ObjectGraph
         $parents = $this->nodes;
         $dependants = $this->nodes;
 
-        foreach ($parents as $parentId => $parent) {
-            foreach ($dependants as $dependantId => $dependant) {
+        foreach ($parents as $parent) {
+            foreach ($dependants as $dependant) {
                 if ($parent->getId() === $dependant->getId()) {
                     continue;
                 }
 
-                if (true === $callback($this->nodes[$parentId]->getReferencedObject(), $this->nodes[$dependantId]->getReferencedObject())) {
-                    $this->addDependency($parent, $dependant);
+                $isDependency = $callback($parent->getReferencedObject(), $dependant->getReferencedObject());
+
+                if (true === $isDependency) {
+                    $this->addDependency($parent->getReferencedObject(), $dependant->getReferencedObject());
                 }
             }
         }
@@ -247,6 +252,7 @@ class ObjectGraph
             $dependants = array_intersect_key($this->nodes, array_flip($parent->getDependents()));
 
             foreach ($dependants as $dependant) {
+                /* @var $dependant Node */
                 $callback($parent->getReferencedObject(), $dependant->getReferencedObject());
             }
         }

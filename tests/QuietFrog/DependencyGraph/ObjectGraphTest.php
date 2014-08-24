@@ -4,6 +4,18 @@ namespace QuietFrog\DependencyGraph;
 
 class ObjectGraphTest extends \PHPUnit_Framework_TestCase
 {
+    public function testEmptyGraph()
+    {
+        $graph = new ObjectGraph();
+
+        $this->assertTrue($graph->isResolved());
+
+        $unresolved = $graph->getUnresolvedDependencies();
+
+        $this->assertInternalType('array', $unresolved);
+        $this->assertCount(0, $unresolved);
+    }
+
     public function testDependencyGraphWithNoDefinedDependencies()
     {
         $object1 = new TestObject(1);
@@ -773,6 +785,24 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
         $graph->configure(array($configurator, 'configure'));
     }
 
+    public function testConfiguringLockedGraph()
+    {
+        $graph = new ObjectGraph();
+
+        $configurator = $this->getMock('stdClass', array('configure'));
+
+        $configurator
+            ->expects($this->never())
+            ->method('configure')
+        ;
+
+        $graph->isResolved(); // lock is performed here
+
+        $this->setExpectedException('QuietFrog\DependencyGraph\Exception\GraphNotWritableException');
+
+        $graph->configure(array($configurator, 'configure'));
+    }
+
     public function testConfiguringGraphWithOneObject()
     {
         $object1 = new TestObject(1);
@@ -791,17 +821,29 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
         $graph->configure(array($configurator, 'configure'));
     }
 
+    /**
+     * Tested graph:
+     *
+     *       1
+     *     /  \
+     *    2    3
+     *     \  /
+     *      4
+     *
+     */
     public function testConfiguringGraph()
     {
         $object1 = new TestObject(1);
         $object2 = new TestObject(2);
         $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
 
         $graph = new ObjectGraph();
 
         $graph->add($object1);
         $graph->add($object2);
         $graph->add($object3);
+        $graph->add($object4);
 
         $configurator = $this->getMock('stdClass', array('configure'));
 
@@ -809,39 +851,166 @@ class ObjectGraphTest extends \PHPUnit_Framework_TestCase
             ->expects($this->at(0))
             ->method('configure')
             ->with($object1, $object2)
+            ->willReturn(true);
         ;
 
         $configurator
             ->expects($this->at(1))
             ->method('configure')
             ->with($object1, $object3)
-        ;
-
-        $configurator
-            ->expects($this->at(2))
-            ->method('configure')
-            ->with($object2, $object1)
-        ;
-
-        $configurator
-            ->expects($this->at(3))
-            ->method('configure')
-            ->with($object2, $object3)
-        ;
-
-        $configurator
-            ->expects($this->at(4))
-            ->method('configure')
-            ->with($object3, $object1)
+            ->willReturn(true);
         ;
 
         $configurator
             ->expects($this->at(5))
             ->method('configure')
-            ->with($object3, $object2)
+            ->with($object2, $object4)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(8))
+            ->method('configure')
+            ->with($object3, $object4)
+            ->willReturn(true);
+        ;
+
+        // any other "configure" call results in false
+        $configurator
+            ->expects($this->any())
+            ->method('configure')
+            ->willReturn(false);
         ;
 
         $graph->configure(array($configurator, 'configure'));
+
+
+        $expected = new ObjectGraph();
+        $expected->add($object1);
+        $expected->add($object2);
+        $expected->add($object3);
+        $expected->add($object4);
+        $expected->addDependency($object1, $object2);
+        $expected->addDependency($object1, $object3);
+        $expected->addDependency($object2, $object4);
+        $expected->addDependency($object3, $object4);
+
+        $this->assertEquals($expected, $graph);
+    }
+
+    /**
+     * Tested graph:
+     *
+     *    1     2
+     *    |    / \
+     *    3   4   5
+     *     \ /    |
+     *      6     7
+     *      |
+     *      8
+     *
+     */
+    public function testConfiguringGraphWithTwoEntryNodes()
+    {
+        $object1 = new TestObject(1);
+        $object2 = new TestObject(2);
+        $object3 = new TestObject(3);
+        $object4 = new TestObject(4);
+        $object5 = new TestObject(5);
+        $object6 = new TestObject(6);
+        $object7 = new TestObject(7);
+        $object8 = new TestObject(8);
+
+        $graph = new ObjectGraph();
+
+        $graph->add($object1);
+        $graph->add($object2);
+        $graph->add($object3);
+        $graph->add($object4);
+        $graph->add($object5);
+        $graph->add($object6);
+        $graph->add($object7);
+        $graph->add($object8);
+
+        $configurator = $this->getMock('stdClass', array('configure'));
+
+        $configurator
+            ->expects($this->at(1))
+            ->method('configure')
+            ->with($object1, $object3)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(9))
+            ->method('configure')
+            ->with($object2, $object4)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(10))
+            ->method('configure')
+            ->with($object2, $object5)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(18))
+            ->method('configure')
+            ->with($object3, $object6)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(25))
+            ->method('configure')
+            ->with($object4, $object6)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(33))
+            ->method('configure')
+            ->with($object5, $object7)
+            ->willReturn(true);
+        ;
+
+        $configurator
+            ->expects($this->at(41))
+            ->method('configure')
+            ->with($object6, $object8)
+            ->willReturn(true);
+        ;
+
+        // any other "configure" call results in false
+        $configurator
+            ->expects($this->any())
+            ->method('configure')
+            ->willReturn(false);
+        ;
+
+        $graph->configure(array($configurator, 'configure'));
+
+
+        $expected = new ObjectGraph();
+        $expected->add($object1);
+        $expected->add($object2);
+        $expected->add($object3);
+        $expected->add($object4);
+        $expected->add($object5);
+        $expected->add($object6);
+        $expected->add($object7);
+        $expected->add($object8);
+        $expected->addDependency($object1, $object3);
+        $expected->addDependency($object2, $object4);
+        $expected->addDependency($object2, $object5);
+        $expected->addDependency($object3, $object6);
+        $expected->addDependency($object4, $object6);
+        $expected->addDependency($object5, $object7);
+        $expected->addDependency($object6, $object8);
+
+        $this->assertEquals($expected, $graph);
     }
 }
 
